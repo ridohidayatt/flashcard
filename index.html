@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Word Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap">
+<style>
+/* Layout: one study card centred above a compact word list; mobile-first single column */
+:root{
+  --bg:#eef1f5; --paper:#ffffff; --ink:#1b2a41; --muted:#5b6b82; --line:#d5dce6;
+  --accent:#2f5bd3; --learn:#c98a00; --learn-bg:#fff4d6; --known:#1e8a5a; --known-bg:#dcf3e8;
+  --new-bg:#e4e9f2;
+  --display:"Literata",Georgia,serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111824; --paper:#1a2433; --ink:#e7edf6; --muted:#9aa9be; --line:#2c3a4f;
+  --accent:#7ea2ff; --learn:#f2c04e; --learn-bg:#3a2f12; --known:#5fd39b; --known-bg:#123526; --new-bg:#243147; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111824; --paper:#1a2433; --ink:#e7edf6; --muted:#9aa9be; --line:#2c3a4f;
+  --accent:#7ea2ff; --learn:#f2c04e; --learn-bg:#3a2f12; --known:#5fd39b; --known-bg:#123526; --new-bg:#243147; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+header h1{font-family:var(--display);font-size:1.75rem;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted)}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{flex:1 1 0;min-width:90px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--known);width:0;transition:width .4s}
+
+.scene{perspective:1200px}
+.card{position:relative;width:100%;min-height:260px;cursor:pointer;transform-style:preserve-3d;transition:transform .5s;border:none;background:none;padding:0;font:inherit;color:inherit;text-align:left;display:block}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 20px rgb(27 42 65 / .08);
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--line) 31px 32px);background-position:0 72px}
+.front{justify-content:center;align-items:center;text-align:center}
+.back{transform:rotateY(180deg)}
+.word{font-family:var(--display);font-size:2.4rem;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.pos{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.hint{font-size:.85rem;color:var(--muted);margin-top:auto}
+.back .word{font-size:1.4rem}
+.meaning{font-size:1.15rem;font-weight:700}
+.example{font-style:italic;color:var(--ink);background:var(--paper)}
+.example mark{background:var(--learn-bg);color:inherit;font-style:normal;padding:0 2px;border-radius:3px}
+.tip{font-size:.9rem;color:var(--muted)}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:14px}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.btn{font:inherit;font-weight:700;padding:14px;border-radius:10px;border:2px solid transparent;cursor:pointer}
+.btn.learn{background:var(--learn-bg);color:var(--ink);border-color:var(--learn)}
+.btn.known{background:var(--known-bg);color:var(--ink);border-color:var(--known)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.small:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.counter{text-align:center;color:var(--muted);font-size:.9rem;margin-top:-12px}
+.done{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center}
+.done h2{font-family:var(--display);margin:0 0 6px}
+
+h2.sec{font-family:var(--display);font-size:1.2rem;margin:0}
+.list{list-style:none;margin:0;padding:0;background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.list li{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}
+.list li:first-child{border-top:none}
+.list .w{flex:1;min-width:0}
+.list .w b{font-family:var(--display)}
+.list .w small{display:block;color:var(--muted);overflow-wrap:anywhere}
+.chip{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.chip.new{background:var(--new-bg);color:var(--muted)}
+.chip.learning{background:var(--learn-bg);color:var(--learn)}
+.chip.known{background:var(--known-bg);color:var(--known)}
+
+form{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+label{font-size:.85rem;font-weight:700;display:grid;gap:4px}
+input{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.small{font:inherit;font-size:.9rem;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+.small.primary{background:var(--accent);border-color:var(--accent);color:var(--paper);font-weight:700}
+.note{font-size:.8rem;color:var(--muted)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.card,.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>My Word Deck</h1>
+    <p>Tap the card to see the meaning. Then choose how well you know it.</p>
+  </header>
+
+  <div>
+    <div class="stats">
+      <div class="stat"><b id="sNew">0</b><span>New</span></div>
+      <div class="stat"><b id="sLearn">0</b><span>Still learning</span></div>
+      <div class="stat"><b id="sKnown">0</b><span>Known</span></div>
+    </div>
+    <div class="bar" style="margin-top:10px" aria-hidden="true"><i id="bar"></i></div>
+  </div>
+
+  <section id="study">
+    <div class="scene">
+      <button class="card" id="card" aria-label="Flashcard. Press to flip.">
+        <div class="face front">
+          <div class="pos" id="fPos"></div>
+          <div class="word" id="fWord"></div>
+          <div class="hint">Tap to flip</div>
+        </div>
+        <div class="face back">
+          <div class="word" id="bWord"></div>
+          <div class="meaning" id="bMeaning"></div>
+          <div class="example" id="bExample"></div>
+          <div class="tip" id="bTip"></div>
+        </div>
+      </button>
+    </div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn learn" id="btnLearn" disabled>Still learning</button>
+      <button class="btn known" id="btnKnown" disabled>I know it</button>
+    </div>
+    <p class="counter" id="counter" style="margin-top:12px"></p>
+  </section>
+
+  <section id="done" class="done" hidden>
+    <h2>All done for now</h2>
+    <p id="doneText">You reviewed every card that is due.</p>
+    <button class="small" id="btnAgain">Review all words again</button>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2 class="sec">All words</h2>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2 class="sec">Add your own word</h2>
+    <form id="addForm">
+      <label for="inWord">Word or phrase<input id="inWord" required placeholder="e.g. thrilled"></label>
+      <label for="inMeaning">Meaning<input id="inMeaning" required placeholder="e.g. very happy and excited"></label>
+      <label for="inExample">Example sentence<input id="inExample" placeholder="e.g. I was thrilled to get the job."></label>
+      <div class="row"><button class="small primary" type="submit">Add card</button><span class="note" id="addMsg"></span></div>
+    </form>
+  </section>
+
+  <section class="confirm">
+    <button class="small" id="btnReset">Reset my progress</button>
+    <span id="resetAsk" hidden>Start again from zero? <button class="small" id="resetYes">Yes, reset</button> <button class="small" id="resetNo">Cancel</button></span>
+    <span class="note" id="saveNote"></span>
+  </section>
+</div>
+
+<script>
+const BUILT_IN = [
+  {k:"reluctant",word:"reluctant",pos:"adjective",meaning:"Not wanting to do something.",example:"She was reluctant to speak in the meeting.",tip:"Pattern: reluctant + to + verb."},
+  {k:"exhausted",word:"exhausted",pos:"adjective",meaning:"Extremely tired.",example:"After the 12-hour shift, I was exhausted.",tip:"Stronger than \"tired\". Don't say \"very exhausted\"."},
+  {k:"postpone",word:"postpone",pos:"verb",meaning:"To move an event to a later time.",example:"We postponed the meeting until Friday.",tip:"Similar: put off."},
+  {k:"reliable",word:"reliable",pos:"adjective",meaning:"Can be trusted or depended on.",example:"My old car is slow, but it's reliable.",tip:"Noun: reliability."},
+  {k:"figure-out",word:"figure out",pos:"phrasal verb",meaning:"To understand or find the answer to something.",example:"I can't figure out how this app works.",tip:"Very common in spoken English."},
+  {k:"convenient",word:"convenient",pos:"adjective",meaning:"Easy, useful, or fits well with your plans.",example:"Is 3 pm a convenient time for you?",tip:"Opposite: inconvenient."},
+  {k:"overwhelmed",word:"overwhelmed",pos:"adjective",meaning:"Feeling there is too much to deal with.",example:"I felt overwhelmed by all the emails on Monday.",tip:"Pattern: overwhelmed by / with something."},
+  {k:"appreciate",word:"appreciate",pos:"verb",meaning:"To be thankful for something.",example:"I really appreciate your help.",tip:"Polite in emails: \"I'd appreciate it if…\""},
+  {k:"deal-with",word:"deal with",pos:"phrasal verb",meaning:"To take action to solve a problem or handle a situation.",example:"I'll deal with the problem tomorrow.",tip:"Past: dealt with."},
+  {k:"eventually",word:"eventually",pos:"adverb",meaning:"In the end, after a long time.",example:"The bus was late, but it eventually arrived.",tip:"Not the same as \"maybe\" (a common mistake)."}
+];
+const DAY = 864e5, GAPS = [0,1,3,7,14,30];
+let state = {};   // key -> {status, box, due, word?, meaning?, example?, pos?, custom?}
+let queue = [], cur = null, flipped = false, reviewAll = false;
+let store = null; // {save(k,v), clear(keys)}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function cards(){
+  const customs = Object.entries(state).filter(([k,v]) => v && v.custom).map(([k,v]) => ({k, ...v}));
+  return [...BUILT_IN, ...customs];
+}
+function st(k){ return state[k] || {status:"new",box:0,due:0}; }
+
+/* ---- storage: account database when available, browser storage otherwise ---- */
+const LS = "word-deck-v1";
+function lsLoad(){ try{ return JSON.parse(localStorage.getItem(LS) || "{}"); }catch(e){ return {}; } }
+function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+store = { save(k,v){ lsSave(); }, clear(){ lsSave(); } };
+state = lsLoad();
+
+(async () => {
+  try{
+    if (!window.claude?.use) return;
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    const col = db.collection("data/users/" + id);
+    const snap = await col.get();
+    const remote = {};
+    snap.docs.forEach(d => { const v = d.data(); if (v) remote[d.id] = v; });
+    // first time on the account: carry over anything done in this browser
+    if (!snap.docs.length && Object.keys(state).length){
+      for (const [k,v] of Object.entries(state)) await col.doc(k).set(v);
+    } else state = remote;
+    store = {
+      save(k,v){ lsSave(); col.doc(k).set(v).then(()=>note("Saved"), ()=>note("Could not save. Check your connection.")); },
+      async clear(keys){ lsSave(); for (const k of keys){ try{ await col.doc(k).delete(); }catch(e){} } note("Progress reset"); }
+    };
+    note("Progress saved to your account");
+    buildQueue(); render();
+  }catch(e){ /* keep browser storage */ }
+})();
+let noteT; function note(t){ $("saveNote").textContent = t; clearTimeout(noteT); noteT = setTimeout(()=>$("saveNote").textContent="", 3000); }
+
+/* ---- study queue: still-learning first, then new, then known words that are due ---- */
+function buildQueue(){
+  const now = Date.now();
+  const rank = s => s.status === "learning" ? 0 : s.status === "new" ? 1 : 2;
+  queue = cards().filter(c => { const s = st(c.k); return reviewAll || s.status !== "known" || s.due <= now; })
+    .sort((a,b) => rank(st(a.k)) - rank(st(b.k)) || (st(a.k).due - st(b.k).due));
+  cur = queue[0] || null; flipped = false;
+}
+function answer(knew){
+  if (!cur) return;
+  const s = {...st(cur.k)};
+  if (knew){ s.box = Math.min((s.box||0) + 1, GAPS.length - 1); s.status = "known"; s.due = Date.now() + GAPS[s.box] * DAY; }
+  else { s.box = 0; s.status = "learning"; s.due = 0; }
+  if (cur.custom){ Object.assign(s, {custom:true, word:cur.word, meaning:cur.meaning, example:cur.example, pos:cur.pos}); }
+  state[cur.k] = s; store.save(cur.k, s);
+  queue.shift();
+  if (!knew) queue.splice(Math.min(3, queue.length), 0, cur); // see it again soon
+  if (!queue.length) reviewAll = false;
+  cur = queue[0] || null; flipped = false; render();
+}
+
+function highlight(ex, word){
+  const base = word.split(" ")[0].slice(0, Math.max(4, word.split(" ")[0].length - 2));
+  const re = new RegExp("(" + base.replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "\\w*" + (word.includes(" ") ? "(\\s+\\w+)?" : "") + ")", "i");
+  return esc(ex).replace(re, "<mark>$1</mark>");
+}
+function render(){
+  const all = cards(), now = Date.now();
+  let n=0,l=0,k=0; all.forEach(c => { const s = st(c.k).status; s==="known"?k++:s==="learning"?l++:n++; });
+  $("sNew").textContent = n; $("sLearn").textContent = l; $("sKnown").textContent = k;
+  $("bar").style.width = (all.length ? k/all.length*100 : 0) + "%";
+
+  $("study").hidden = !cur; $("done").hidden = !!cur;
+  if (cur){
+    $("fWord").textContent = cur.word; $("fPos").textContent = cur.pos || "";
+    $("bWord").textContent = cur.word; $("bMeaning").textContent = cur.meaning;
+    $("bExample").innerHTML = cur.example ? "“" + highlight(cur.example, cur.word) + "”" : "";
+    $("bTip").textContent = cur.tip || "";
+    $("card").classList.toggle("flipped", flipped);
+    $("btnLearn").disabled = $("btnKnown").disabled = !flipped;
+    $("counter").textContent = flipped ? "How well do you know it?" : queue.length + (queue.length === 1 ? " card" : " cards") + " left to review";
+  } else {
+    const next = all.map(c => st(c.k)).filter(s => s.status==="known").map(s=>s.due).sort((a,b)=>a-b)[0];
+    $("doneText").textContent = next ? "Great work. Your next review is " + new Date(next).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"short"}) + "." : "Great work.";
+  }
+
+  $("list").innerHTML = all.map(c => {
+    const s = st(c.k); const label = s.status==="known" ? "Known" : s.status==="learning" ? "Still learning" : "New";
+    return `<li><div class="w"><b>${esc(c.word)}</b><small>${esc(c.meaning)}</small></div><span class="chip ${s.status}">${label}</span></li>`;
+  }).join("");
+}
+
+$("card").addEventListener("click", () => { if (!cur) return; flipped = !flipped; render(); });
+$("btnLearn").addEventListener("click", () => answer(false));
+$("btnKnown").addEventListener("click", () => answer(true));
+$("btnAgain").addEventListener("click", () => { reviewAll = true; buildQueue(); render(); });
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,form")) return;
+  if (e.key === "1" && flipped) answer(false);
+  if (e.key === "2" && flipped) answer(true);
+});
+
+$("addForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const word = $("inWord").value.trim(), meaning = $("inMeaning").value.trim(), example = $("inExample").value.trim();
+  if (!word || !meaning) return;
+  const k = "my-" + word.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  if (cards().some(c => c.k === k || c.word.toLowerCase() === word.toLowerCase())){ $("addMsg").textContent = "That word is already in your deck."; return; }
+  state[k] = {custom:true, word, meaning, example, pos:"", status:"new", box:0, due:0};
+  store.save(k, state[k]);
+  e.target.reset(); $("addMsg").textContent = "Added “" + word + "”.";
+  buildQueue(); render();
+});
+
+$("btnReset").addEventListener("click", () => { $("resetAsk").hidden = false; $("btnReset").hidden = true; });
+$("resetNo").addEventListener("click", () => { $("resetAsk").hidden = true; $("btnReset").hidden = false; });
+$("resetYes").addEventListener("click", () => {
+  const keys = Object.keys(state);
+  // keep your own words, clear their progress
+  const kept = {}; for (const [k,v] of Object.entries(state)) if (v.custom) kept[k] = {...v, status:"new", box:0, due:0};
+  state = kept;
+  store.clear(keys.filter(k => !kept[k]));
+  for (const [k,v] of Object.entries(kept)) store.save(k, v);
+  $("resetAsk").hidden = true; $("btnReset").hidden = false;
+  reviewAll = false; buildQueue(); render();
+});
+
+buildQueue(); render();
+</script>
+
+</body>
+</html>
